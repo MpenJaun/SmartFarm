@@ -20,8 +20,14 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
+      - name: Check project files
+        run: |
+          pwd
+          ls -la
+          echo "=== Gradle files ==="
+          find . -maxdepth 2 -type f \( -name "settings.gradle*" -o -name "build.gradle*" -o -name "gradlew" \) -print
+
       - name: Build debug APK
-        working-directory: SmartFarm
         run: |
           chmod +x gradlew
           ./gradlew :app:assembleDebug
@@ -30,4 +36,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: smartfarm-debug-apk
-          path: SmartFarm/app/build/outputs/apk/debug/app-debug.apk
+          path: app/build/outputs/apk/debug/app-debug.apk
