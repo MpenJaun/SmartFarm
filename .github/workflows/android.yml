@@ -11,29 +11,51 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-java@v4
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      - uses: gradle/actions/setup-gradle@v4
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.7.1'
 
-      - name: Check project files
+      - name: Find Android project
         run: |
-          pwd
-          ls -la
-          echo "=== Gradle files ==="
-          find . -maxdepth 2 -type f \( -name "settings.gradle*" -o -name "build.gradle*" -o -name "gradlew" \) -print
+          echo "=== Project structure ==="
+          find . -maxdepth 4 -type f \( -name "settings.gradle" -o -name "settings.gradle.kts" -o -name "build.gradle" -o -name "build.gradle.kts" -o -name "gradlew" \) -print
 
       - name: Build debug APK
         run: |
-          chmod +x gradlew
-          ./gradlew :app:assembleDebug
+          PROJECT_DIR=$(find . -type f \( -name "settings.gradle.kts" -o -name "settings.gradle" \) -print -quit | xargs -r dirname)
+
+          if [ -z "$PROJECT_DIR" ]; then
+            echo "ERROR: settings.gradle/settings.gradle.kts tidak ditemukan!"
+            exit 1
+          fi
+
+          echo "Project ditemukan di: $PROJECT_DIR"
+          cd "$PROJECT_DIR"
+
+          if [ -f "./gradlew" ]; then
+            chmod +x ./gradlew
+            ./gradlew :app:assembleDebug
+          else
+            gradle :app:assembleDebug
+          fi
+
+      - name: Find APK
+        run: |
+          echo "=== APK files ==="
+          find . -type f -name "*.apk" -print
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: smartfarm-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: "**/app/build/outputs/apk/debug/app-debug.apk"
